@@ -1,0 +1,17 @@
+# GPU override (Podman — direct device passthrough, no CDI required)
+#
+# Usage:
+#   podman compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
+
+services:
+  whisper:
+    image: fedirz/faster-whisper-server:latest-cuda
+    devices:
+      - /dev/nvidia0:/dev/nvidia0
+      - /dev/nvidiactl:/dev/nvidiactl
+      - /dev/nvidia-modeset:/dev/nvidia-modeset
+      - /dev/nvidia-uvm:/dev/nvidia-uvm
+      - /dev/nvidia-uvm-tools:/dev/nvidia-uvm-tools
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility

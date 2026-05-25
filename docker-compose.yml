@@ -1,0 +1,28 @@
+# faster-whisper-server — OpenAI-compatible speech-to-text API
+#
+# Exposes POST /v1/audio/transcriptions (drop-in for OpenAI Whisper API)
+#
+# Usage:
+#   cp .env.example .env      # edit model size if needed
+#   podman compose up -d
+#
+# GPU (NVIDIA):
+#   podman compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
+#
+# Test:
+#   curl http://localhost:11435/v1/audio/transcriptions \
+#     -F file=@recording.mp3 -F model=whisper-1
+#
+# Point any OpenAI-compatible client at:
+#   base_url = http://<this-machine-ip>:11435/v1
+
+services:
+  whisper:
+    image: fedirz/faster-whisper-server:latest-cpu
+    ports:
+      - "0.0.0.0:11435:8000" # LAN-accessible; change to 127.0.0.1:11435 for local-only
+    volumes:
+      - ./models:/root/.cache/huggingface # model cache — persisted across restarts
+    environment:
+      - WHISPER__MODEL=${WHISPER_MODEL:-Systran/faster-whisper-medium}
+    restart: unless-stopped
