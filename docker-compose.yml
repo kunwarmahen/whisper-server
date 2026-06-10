@@ -22,7 +22,9 @@ services:
     ports:
       - "0.0.0.0:11435:8000" # LAN-accessible; change to 127.0.0.1:11435 for local-only
     volumes:
-      - ./models:/root/.cache/huggingface # model cache — persisted across restarts
+      # Shared Hugging Face cache on the host — reused across all HF tooling.
+      # Container runs as root, so its HF cache path is /root/.cache/huggingface.
+      - ${HOME}/.cache/huggingface:/root/.cache/huggingface
     environment:
       - WHISPER__MODEL=${WHISPER_MODEL:-Systran/faster-whisper-medium}
     restart: unless-stopped
