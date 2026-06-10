@@ -15,13 +15,38 @@ The model is downloaded on first start and cached in `./models/` — subsequent 
 
 ## GPU (NVIDIA)
 
-Uses direct device passthrough — no CDI setup needed:
+Uses the NVIDIA Container Toolkit via CDI. One-time host setup (generates the
+CDI spec podman reads from `/etc/cdi`):
 
 ```bash
-podman compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
+sudo nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml
+nvidia-ctk cdi list          # should list nvidia.com/gpu=all
 ```
 
-The GPU compose file maps `/dev/nvidia0`, `/dev/nvidiactl`, `/dev/nvidia-uvm`, and related devices directly into the container. If your system has multiple GPUs, add `/dev/nvidia1` etc. to `docker-compose.gpu.yml`.
+> **podman 4.9.x note:** the toolkit writes a CDI spec at version `0.7.0`, but
+> podman 4.9.x only parses up to `0.6.0` (you'll see `unknown field
+> "additionalGids"` / `unresolvable CDI devices`). If so, edit
+> `/etc/cdi/nvidia.yaml`: set `cdiVersion: 0.6.0` and delete the three
+> `additionalGids:` blocks (each is the key plus its two GID lines).
+
+Then start it with **`podman-compose`** (not `podman compose`):
+
+```bash
+podman-compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
+```
+
+> **Why `podman-compose`?** `podman compose` shells out to the `docker-compose`
+> provider, which passes the CDI device name to podman's Docker-compat socket
+> where it is treated as a literal file path (`stat nvidia.com/gpu=all: no such
+> file or directory`) and the GPU is silently dropped. `podman-compose`
+> translates `devices:` into `podman run --device …`, which resolves CDI
+> correctly. Install with `pip install podman-compose`.
+
+Verify the GPU is actually in use:
+
+```bash
+podman exec whisper-server_whisper_1 nvidia-smi
+```
 
 ## API
 
